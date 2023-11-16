@@ -1,4 +1,5 @@
 import tkinter as tk
+import json
 
 class User:
     def __init__(self, username):
@@ -17,11 +18,13 @@ class User:
 class Network:
     def __init__(self):
         self.users = {}
+        self.load_user_data()
 
     def create_user(self, username):
         if username not in self.users:
             self.users[username] = User(username)
             print(f"User {username} created.")
+            self.save_user_data()  # Save user data after creating a user
             return True
         else:
             print("Username already exists.")
@@ -39,6 +42,7 @@ class Network:
         if username in self.users:
             user = self.users[username]
             user.create_post(content)
+            self.save_user_data()  # Save user data after making a post
         else:
             print("User not found.")
 
@@ -48,8 +52,27 @@ class Network:
             friend_user = self.users[friend]
             user.add_friend(friend)
             friend_user.add_friend(username)
+            self.save_user_data()  # Save user data after adding friendship
         else:
             print("User(s) not found.")
+
+    def save_user_data(self):
+        with open("user_data.json", "w") as file:
+            user_data = {username: {"posts": user.posts, "friends": user.friends} for username, user in self.users.items()}
+            json.dump(user_data, file)
+
+    def load_user_data(self):
+        try:
+            with open("user_data.json", "r") as file:
+                user_data = json.load(file)
+                for username, data in user_data.items():
+                    new_user = User(username)
+                    new_user.posts = data["posts"]
+                    new_user.friends = data["friends"]
+                    self.users[username] = new_user
+        except FileNotFoundError:
+            # File does not exist, continue with an empty user database
+            pass
 
 class LoginWindow:
     def __init__(self, master, network, account_window):
@@ -154,6 +177,7 @@ class AccountWindow:
     def show_window(self):
         self.master.deiconify()
 
+# Main code block
 if __name__ == "__main__":
     root = tk.Tk()
     root.configure(bg="black")
